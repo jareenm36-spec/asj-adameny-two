@@ -1,0 +1,72 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  STUDENT
+}
+
+enum SubmissionRemark {
+  ON_TIME
+  BIT_LATE
+  ALWAYS_LATE
+}
+
+model User {
+  id          String       @id @default(cuid())
+  email       String       @unique
+  fullName    String
+  role        Role
+  enrollments Enrollment[]
+  submissions Submission[]
+  createdAt   DateTime     @default(now())
+}
+
+model Course {
+  id          String       @id @default(cuid())
+  title       String
+  description String?
+  lessons     Lesson[]
+  enrollments Enrollment[]
+  createdAt   DateTime     @default(now())
+}
+
+model Lesson {
+  id          String       @id @default(cuid())
+  title       String
+  contentUrl  String
+  courseId    String
+  course      Course       @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  submissions Submission[]
+  createdAt   DateTime     @default(now())
+}
+
+model Enrollment {
+  id         String   @id @default(cuid())
+  userId     String
+  courseId   String
+  enrolledAt DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course     Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, courseId])
+}
+
+model Submission {
+  id          String           @id @default(cuid())
+  userId      String
+  lessonId    String
+  score       Float            @default(0)
+  submittedAt DateTime         @default(now())
+  remark      SubmissionRemark @default(ON_TIME)
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lesson      Lesson           @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@index([userId, lessonId])
+}
